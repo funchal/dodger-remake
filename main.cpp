@@ -56,7 +56,7 @@ public:
 };
 
 Level::Level()
-: enemies(), data()
+: enemies(), data(), food_count()
 {}
 
 class LevelPack
@@ -146,12 +146,12 @@ class Dodger
 {
 public:
     void run();
+    int score;
 
 //private:
     void loop();
     void update();
     void draw();
-    void update_player_anim();
 
     sf::RenderWindow window;
     sf::Texture cell_textures[Level::num_cell_types - 1];
@@ -172,6 +172,7 @@ public:
 
     sf::Texture player_textures[num_directions][num_states];
 
+    int level_data[Level::num_lines][Level::num_cols];
     sf::Sprite sprites[Level::num_lines][Level::num_cols];
 
     LevelPack level_pack;
@@ -180,17 +181,20 @@ public:
     int player_col;
     Direction player_direction;
     int player_anim;
+    int food_count;
 };
 
 void Dodger::run()
 {
-    window.create(sf::VideoMode(640, 480), "Dodger");
-    window.setFramerateLimit(10);
+    int width = (Level::num_cols + 3) * 24;
+    int height = (Level::num_lines + 4.5) * 24;
+    window.create(sf::VideoMode(width, height), "Dodger");
+    window.setFramerateLimit(4);
     window.setVerticalSyncEnabled(true);
 
     for (int line = 0; line != Level::num_lines; line++) {
         for (int col = 0; col != Level::num_cols; col++) {
-            sprites[line][col].setPosition(24*col, 24*line);
+            sprites[line][col].setPosition(24 * (1.5 + col), 24 * (3 + line));
         }
     }
 
@@ -217,8 +221,11 @@ void Dodger::run()
         for (int col = 0; col != Level::num_cols; col++) {
             int cell = level_pack.levels[0].data[line][col];
             if (cell != Level::player) {
+                level_data[line][col] = cell;
                 sprites[line][col].setTexture(cell_textures[cell]);
             } else {
+                level_data[line][col] = Level::grid;
+                sprites[line][col].setTexture(cell_textures[Level::grid]);
                 player_line = line;
                 player_col = col;
             }
@@ -228,7 +235,6 @@ void Dodger::run()
     // one frame closed followed by two frames open and one frame closed
     player_direction = up;
     player_anim = 1;
-    update_player_anim();
 
     loop();
 
@@ -243,6 +249,24 @@ void Dodger::loop()
             if (event.type == sf::Event::Closed) {
                 return;
             }
+            if (event.type == sf::Event::KeyPressed) {
+                switch (event.key.code) {
+                case sf::Keyboard::Up:
+                    player_direction = up;
+                    break;
+                case sf::Keyboard::Down:
+                    player_direction = down;
+                    break;
+                case sf::Keyboard::Left:
+                    player_direction = left;
+                    break;
+                case sf::Keyboard::Right:
+                    player_direction = right;
+                    break;
+                default:
+                    break;
+                }
+            }
         }
 
         update();
@@ -253,8 +277,6 @@ void Dodger::loop()
 
 void Dodger::update()
 {
-    player_anim = (player_anim + 1) % 4;
-
     int new_player_line = player_line;
     int new_player_col = player_col;
     switch (player_direction) {
@@ -274,22 +296,48 @@ void Dodger::update()
             break;
     }
 
-    if (sprites[new_player_line][new_player_col].getTexture()) {
-
+    // don't move if blocked
+    if (new_player_line < 0
+            || new_player_line >= Level::num_lines
+            || new_player_col < 0
+            || new_player_col >= Level::num_cols
+            || level_data[new_player_line][new_player_col] == Level::blank
+            || level_data[new_player_line][new_player_col] == Level::wall) {
+        new_player_line = player_line;
+        new_player_col = player_col;
+    } else {
+        player_anim = (player_anim + 1) % 4;
     }
-    // compute new cell
-    // switch(thing on new cell)
-    //   case nogrid:
-    //      bla
-    //   case death:
-    //   case normal:
-    //      player_pos = new player_pos
 
-    update_player_anim();
-}
+    // check if dead
+    // TODO: lasers can kill too
+    if (level_data[new_player_line][new_player_col] == Level::skull) {
+        // TODO: death animation and lose one life.
+        return; // can't eat if dead
+    }
 
-void Dodger::update_player_anim()
-{
+    switch(level_data[new_player_line][new_player_col]) {
+    case Level::apple:
+        score += 20;
+        food_count--;
+        break;
+    case Level::sberry:
+        score += 30;
+        food_count--;
+        break;
+    case Level::cherry:
+        score += 50;
+        food_count--;
+        break;
+    }
+
+    if (food_count == 0) {
+        // TODO: freeze image, pop-up with password to next level.
+    }
+
+    sprites[player_line][player_col].setTexture(cell_textures[Level::grid]);
+    player_line = new_player_line;
+    player_col = new_player_col;
     AnimState anim_state = (AnimState) (player_anim / 2);
     sprites[player_line][player_col].setTexture(
             player_textures[player_direction][anim_state]);
