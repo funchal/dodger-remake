@@ -37,10 +37,10 @@ void Dodger::run()
 
     dying_textures[0] = player_textures[up][closed];
     dying_textures[1] = player_textures[up][open];
-    dying_textures[2].loadFromFile("dead3.bmp");
-    dying_textures[3].loadFromFile("dead4.bmp");
-    dying_textures[4].loadFromFile("dead5.bmp");
-    dying_textures[5].loadFromFile("dead6.bmp");
+    dying_textures[2].loadFromFile("img/dead3.bmp");
+    dying_textures[3].loadFromFile("img/dead4.bmp");
+    dying_textures[4].loadFromFile("img/dead5.bmp");
+    dying_textures[5].loadFromFile("img/dead6.bmp");
 
     try {
         load_levels("originallevels.txt");
