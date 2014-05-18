@@ -15,7 +15,8 @@ public:
 private:
     void init();
     void new_life();
-    void initialise_texture_grid();
+    void new_level();
+    void new_game();
     void loop();
     void update();
     void draw();

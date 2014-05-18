@@ -86,8 +86,10 @@ void Dodger::new_life()
     player_anim = 1;
 }
 
-void Dodger::initialise_texture_grid()
+void Dodger::new_level()
 {
+    level = levels[level_number - 1];
+
     for (int line = 0; line != Level::num_lines; line++) {
         for (int col = 0; col != Level::num_cols; col++) {
             int cell = level.data[line][col];
@@ -98,18 +100,23 @@ void Dodger::initialise_texture_grid()
             }
         }
     }
+
+    new_life();
+}
+
+void Dodger::new_game()
+{
+    life_count = 3;
+    level_number = 1;
+
+    new_level();
 }
 
 void Dodger::run()
 {
     init();
 
-    life_count = 3;
-    level_number = 8; // 1
-    level = levels[level_number - 1];
-
-    initialise_texture_grid();
-    new_life();
+    new_game();
 
     loop();
 
@@ -161,12 +168,15 @@ void Dodger::loop()
 void Dodger::update()
 {
     if (level.food_count == 0) {
+        std::cout << "level cleared" << std::endl;
         if (level_number == levels.size()) {
             // TODO: well done screen
+            std::cout << "well done" << std::endl;
+            new_game();
         } else {
             // TODO: freeze image, pop-up with password to next level.
             level_number++;
-            initialise_texture_grid();
+            new_level();
         }
         return;
     }
@@ -181,6 +191,7 @@ void Dodger::update()
             } else {
                 // TODO: game over screen
                 std::cout << "game over" << std::endl;
+                new_game();
             }
             return;
         }
