@@ -14,7 +14,8 @@ public:
 
 private:
     void init();
-    void load_level();
+    void new_life();
+    void initialise_texture_grid();
     void loop();
     void update();
     void draw();
@@ -58,6 +59,8 @@ private:
 
     int player_line;
     int player_col;
+    int delta_line;
+    int delta_col;
     Direction player_direction;
     int player_anim;
     int life_count;

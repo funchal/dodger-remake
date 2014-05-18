@@ -70,9 +70,24 @@ void Dodger::init()
     stream.close();
 }
 
-void Dodger::load_level()
+void Dodger::new_life()
 {
-    level = levels[level_number - 1];
+    death = false;
+    player_direction = up;
+
+    player_line = level.initial_player_line;
+    player_col = level.initial_player_col;
+
+    // no initial movement
+    delta_line = 0;
+    delta_col = 0;
+
+    // one frame closed followed by two frames open and one frame closed
+    player_anim = 1;
+}
+
+void Dodger::initialise_texture_grid()
+{
     for (int line = 0; line != Level::num_lines; line++) {
         for (int col = 0; col != Level::num_cols; col++) {
             int cell = level.data[line][col];
@@ -80,16 +95,9 @@ void Dodger::load_level()
                 sprites[line][col].setTexture(textures.cell[cell]);
             } else {
                 sprites[line][col].setTexture(textures.cell[Level::grid]);
-                player_line = line;
-                player_col = col;
             }
         }
     }
-
-    // one frame closed followed by two frames open and one frame closed
-    player_direction = up;
-    player_anim = 1;
-    death = false;
 }
 
 void Dodger::run()
@@ -98,8 +106,10 @@ void Dodger::run()
 
     life_count = 3;
     level_number = 8; // 1
+    level = levels[level_number - 1];
 
-    load_level();
+    initialise_texture_grid();
+    new_life();
 
     loop();
 
@@ -118,15 +128,23 @@ void Dodger::loop()
                 switch (event.key.code) {
                 case sf::Keyboard::Up:
                     player_direction = up;
+                    delta_line = -1;
+                    delta_col = 0;
                     break;
                 case sf::Keyboard::Down:
                     player_direction = down;
+                    delta_line = 1;
+                    delta_col = 0;
                     break;
                 case sf::Keyboard::Left:
                     player_direction = left;
+                    delta_line = 0;
+                    delta_col = -1;
                     break;
                 case sf::Keyboard::Right:
                     player_direction = right;
+                    delta_line = 0;
+                    delta_col = 1;
                     break;
                 default:
                     break;
@@ -148,7 +166,7 @@ void Dodger::update()
         } else {
             // TODO: freeze image, pop-up with password to next level.
             level_number++;
-            load_level();
+            initialise_texture_grid();
         }
         return;
     }
@@ -159,9 +177,7 @@ void Dodger::update()
             if (life_count > 0) {
                 sprites[player_line][player_col].setTexture(
                         textures.cell[level.data[player_line][player_col]]);
-                player_line = level.initial_player_line;
-                player_col = level.initial_player_col;
-                death = false;
+                new_life();
             } else {
                 // TODO: game over screen
                 std::cout << "game over" << std::endl;
@@ -172,24 +188,8 @@ void Dodger::update()
         return;
     }
 
-    int new_player_line = player_line;
-    int new_player_col = player_col;
-    switch (player_direction) {
-        case up:
-            new_player_line--;
-            break;
-        case left:
-            new_player_col--;
-            break;
-        case down:
-            new_player_line++;
-            break;
-        case right:
-            new_player_col++;
-            break;
-        default:
-            break;
-    }
+    int new_player_line = player_line + delta_line;
+    int new_player_col = player_col + delta_col;
 
     int new_cell = level.data[new_player_line][new_player_col];
 
@@ -201,7 +201,7 @@ void Dodger::update()
             || new_cell == Level::blank
             || new_cell == Level::wall) {
         new_cell = level.data[new_player_line][new_player_col];
-    } else {
+    } else if (delta_line != 0 or delta_col != 0) {
         // draw a grid on the previous position and update the position
         sprites[player_line][player_col].setTexture(textures.cell[Level::grid]);
         player_line = new_player_line;
