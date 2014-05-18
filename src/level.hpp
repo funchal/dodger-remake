@@ -39,6 +39,9 @@ public:
     int data[num_lines][num_cols];
     int speed;
     int food_count;
+
+    Level(): speed(), food_count(0) {}
+
 };
 
 #endif

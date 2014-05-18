@@ -12,6 +12,8 @@ public:
     int score;
 
 private:
+    void init();
+    void load_level();
     void loop();
     void update();
     void draw();
@@ -44,13 +46,15 @@ private:
 
     int player_line;
     int player_col;
+    int initial_player_line;
+    int initial_player_col;
     Direction player_direction;
     int player_anim;
     int food_count;
     int life_count;
     bool dying;
     int dying_anim;
-    int level_number;
+    unsigned int level_number;
 };
 
 void error(const char* format, ...);

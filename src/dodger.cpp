@@ -5,7 +5,9 @@
 #include <cstdarg>
 #include <exception>
 
-void Dodger::run()
+#include <iostream>
+
+void Dodger::init()
 {
     int width = (Level::num_cols + 3) * 24;
     int height = (Level::num_lines + 4.5) * 24;
@@ -55,17 +57,22 @@ void Dodger::run()
     //}
 
     stream.close();
+}
 
-    level_number = 1;
+void Dodger::load_level()
+{
+    Level level = levels[level_number - 1];
     for (int line = 0; line != Level::num_lines; line++) {
         for (int col = 0; col != Level::num_cols; col++) {
-            int cell = levels[level_number - 1].data[line][col];
+            int cell = level.data[line][col];
             if (cell != Level::player) {
                 level_data[line][col] = cell;
                 sprites[line][col].setTexture(cell_textures[cell]);
             } else {
                 level_data[line][col] = Level::grid;
                 sprites[line][col].setTexture(cell_textures[Level::grid]);
+                initial_player_line = line;
+                initial_player_col = col;
                 player_line = line;
                 player_col = col;
             }
@@ -75,8 +82,18 @@ void Dodger::run()
     // one frame closed followed by two frames open and one frame closed
     player_direction = up;
     player_anim = 1;
-    life_count = 3;
     dying = false;
+    food_count = level.food_count;
+}
+
+void Dodger::run()
+{
+    init();
+
+    life_count = 3;
+    level_number = 1;
+
+    load_level();
 
     loop();
 
@@ -119,13 +136,29 @@ void Dodger::loop()
 
 void Dodger::update()
 {
+    if (food_count == 0) {
+        if (level_number == levels.size()) {
+            // TODO: well done screen
+        } else {
+            // TODO: freeze image, pop-up with password to next level.
+            level_number++;
+            load_level();
+        }
+        return;
+    }
+
     if (dying) {
         dying_anim++;
         if (dying_anim == dying_anim_length) {
             if (life_count > 0) {
-                // TODO: reset level
+                sprites[player_line][player_col].setTexture(
+                        cell_textures[level_data[player_line][player_col]]);
+                player_line = initial_player_line;
+                player_col = initial_player_col;
+                dying = false;
             } else {
                 // TODO: game over screen
+                std::cout << "game over" << std::endl;
             }
             return;
         }
@@ -196,14 +229,6 @@ void Dodger::update()
         case Level::cherry:
             score += 50;
             break;
-        }
-    }
-
-    if (food_count == 0) {
-        if (level_number == levels.size()) {
-            // TODO: well done screen
-        } else {
-            // TODO: freeze image, pop-up with password to next level.
         }
     }
 
