@@ -66,18 +66,14 @@ void Dodger::init()
 
 void Dodger::load_level()
 {
-    Level level = levels[level_number - 1];
+    level = levels[level_number - 1];
     for (int line = 0; line != Level::num_lines; line++) {
         for (int col = 0; col != Level::num_cols; col++) {
             int cell = level.data[line][col];
             if (cell != Level::player) {
-                level_data[line][col] = cell;
                 sprites[line][col].setTexture(textures.cell[cell]);
             } else {
-                level_data[line][col] = Level::grid;
                 sprites[line][col].setTexture(textures.cell[Level::grid]);
-                initial_player_line = line;
-                initial_player_col = col;
                 player_line = line;
                 player_col = col;
             }
@@ -88,7 +84,6 @@ void Dodger::load_level()
     player_direction = up;
     player_anim = 1;
     death = false;
-    food_count = level.food_count;
 }
 
 void Dodger::run()
@@ -96,7 +91,7 @@ void Dodger::run()
     init();
 
     life_count = 3;
-    level_number = 1;
+    level_number = 8; // 1
 
     load_level();
 
@@ -141,7 +136,7 @@ void Dodger::loop()
 
 void Dodger::update()
 {
-    if (food_count == 0) {
+    if (level.food_count == 0) {
         if (level_number == levels.size()) {
             // TODO: well done screen
         } else {
@@ -157,9 +152,9 @@ void Dodger::update()
         if (death_anim == death_anim_length) {
             if (life_count > 0) {
                 sprites[player_line][player_col].setTexture(
-                        textures.cell[level_data[player_line][player_col]]);
-                player_line = initial_player_line;
-                player_col = initial_player_col;
+                        textures.cell[level.data[player_line][player_col]]);
+                player_line = level.initial_player_line;
+                player_col = level.initial_player_col;
                 death = false;
             } else {
                 // TODO: game over screen
@@ -190,7 +185,7 @@ void Dodger::update()
             break;
     }
 
-    int new_cell = level_data[new_player_line][new_player_col];
+    int new_cell = level.data[new_player_line][new_player_col];
 
     // don't move if blocked
     if (new_player_line < 0
@@ -199,7 +194,7 @@ void Dodger::update()
             || new_player_col >= Level::num_cols
             || new_cell == Level::blank
             || new_cell == Level::wall) {
-        new_cell = level_data[new_player_line][new_player_col];
+        new_cell = level.data[new_player_line][new_player_col];
     } else {
         // draw a grid on the previous position and update the position
         sprites[player_line][player_col].setTexture(textures.cell[Level::grid]);
@@ -221,8 +216,8 @@ void Dodger::update()
     if (new_cell == Level::apple
             || new_cell == Level::sberry
             || new_cell == Level::cherry) {
-        food_count--;
-        level_data[new_player_line][new_player_col] = Level::grid;
+        level.food_count--;
+        level.data[new_player_line][new_player_col] = Level::grid;
 
         play_sound(sounds.chomp);
 

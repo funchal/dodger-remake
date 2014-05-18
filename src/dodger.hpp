@@ -51,18 +51,15 @@ private:
         sf::SoundBuffer wdone;
     } sounds;
 
-    int level_data[Level::num_lines][Level::num_cols];
     sf::Sprite sprites[Level::num_lines][Level::num_cols];
 
     std::vector<Level> levels;
+    Level level;
 
     int player_line;
     int player_col;
-    int initial_player_line;
-    int initial_player_col;
     Direction player_direction;
     int player_anim;
-    int food_count;
     int life_count;
     bool death;
     int death_anim;

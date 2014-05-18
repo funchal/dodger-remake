@@ -108,9 +108,9 @@ bool Level::import(std::istream& stream)
     }
 
     // find player position
-    unsigned player_col = stream.get();
-    unsigned player_line = stream.get();
-    if (player_line > num_lines || player_col > num_cols) {
+    initial_player_col = stream.get();
+    initial_player_line = stream.get();
+    if (initial_player_line > num_lines || initial_player_col > num_cols) {
         error("Invalid level format: incorrect start position");
     }
 
@@ -144,11 +144,11 @@ bool Level::import(std::istream& stream)
         error("Invalid level format: no food");
     }
 
-    if (data[player_line][player_col] != grid) {
+    if (data[initial_player_line][initial_player_col] != grid) {
         error("Invalid level format: player must start in grid");
     }
 
-    data[player_line][player_col] = player;
+    data[initial_player_line][initial_player_col] = player;
 
     stream.exceptions(std::istream::badbit |
                       std::istream::failbit);

@@ -39,8 +39,10 @@ public:
     int data[num_lines][num_cols];
     int speed;
     int food_count;
+    unsigned initial_player_line;
+    unsigned initial_player_col;
 
-    Level(): speed(), food_count(0) {}
+    Level(): speed(), food_count(), initial_player_line(), initial_player_col() {}
 
 };
 
