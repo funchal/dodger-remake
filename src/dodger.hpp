@@ -3,6 +3,7 @@
 
 #include "level.hpp"
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
 #include <vector>
 
 class Dodger
@@ -17,9 +18,9 @@ private:
     void loop();
     void update();
     void draw();
+    void play_sound(const sf::SoundBuffer& sound);
 
     sf::RenderWindow window;
-    sf::Texture cell_textures[Level::num_cell_types - 1];
 
     enum Direction {
         up,
@@ -35,9 +36,20 @@ private:
         num_states,
     };
 
-    enum { dying_anim_length = 6 };
-    sf::Texture player_textures[num_directions][num_states];
-    sf::Texture dying_textures[dying_anim_length];
+    enum { death_anim_length = 6 };
+
+    struct {
+        sf::Texture cell[Level::num_cell_types - 1];
+        sf::Texture player[num_directions][num_states];
+        sf::Texture death[death_anim_length];
+    } textures;
+
+    struct {
+        sf::SoundBuffer chomp;
+        sf::SoundBuffer dead;
+        sf::SoundBuffer gover;
+        sf::SoundBuffer wdone;
+    } sounds;
 
     int level_data[Level::num_lines][Level::num_cols];
     sf::Sprite sprites[Level::num_lines][Level::num_cols];
@@ -52,9 +64,9 @@ private:
     int player_anim;
     int food_count;
     int life_count;
-    bool dying;
-    int dying_anim;
-    unsigned int level_number;
+    bool death;
+    int death_anim;
+    unsigned level_number;
 };
 
 void error(const char* format, ...);

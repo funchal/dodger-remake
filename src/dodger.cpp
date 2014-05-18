@@ -11,7 +11,7 @@ void Dodger::init()
 {
     int width = (Level::num_cols + 3) * 24;
     int height = (Level::num_lines + 4.5) * 24;
-    window.create(sf::VideoMode(width, height), "Dodger");
+    window.create(sf::VideoMode(width, height), "dodger-remake");
     window.setFramerateLimit(7);
     window.setVerticalSyncEnabled(true);
 
@@ -21,29 +21,34 @@ void Dodger::init()
         }
     }
 
-    cell_textures[Level::blank].loadFromFile("img/blank.bmp");
-    cell_textures[Level::grid].loadFromFile("img/grid.bmp");
-    cell_textures[Level::wall].loadFromFile("img/wall.bmp");
-    cell_textures[Level::apple].loadFromFile("img/apple.bmp");
-    cell_textures[Level::sberry].loadFromFile("img/sberry.bmp");
-    cell_textures[Level::cherry].loadFromFile("img/cherry.bmp");
-    cell_textures[Level::skull].loadFromFile("img/skull.bmp");
+    textures.cell[Level::blank].loadFromFile("img/blank.bmp");
+    textures.cell[Level::grid].loadFromFile("img/grid.bmp");
+    textures.cell[Level::wall].loadFromFile("img/wall.bmp");
+    textures.cell[Level::apple].loadFromFile("img/apple.bmp");
+    textures.cell[Level::sberry].loadFromFile("img/sberry.bmp");
+    textures.cell[Level::cherry].loadFromFile("img/cherry.bmp");
+    textures.cell[Level::skull].loadFromFile("img/skull.bmp");
 
-    player_textures[up][open].loadFromFile("img/gmanuo.bmp");
-    player_textures[left][open].loadFromFile("img/gmanlo.bmp");
-    player_textures[down][open].loadFromFile("img/gmando.bmp");
-    player_textures[right][open].loadFromFile("img/gmanro.bmp");
-    player_textures[up][closed].loadFromFile("img/gmanuc.bmp");
-    player_textures[left][closed].loadFromFile("img/gmanlc.bmp");
-    player_textures[down][closed].loadFromFile("img/gmandc.bmp");
-    player_textures[right][closed].loadFromFile("img/gmanrc.bmp");
+    textures.player[up][open].loadFromFile("img/gmanuo.bmp");
+    textures.player[left][open].loadFromFile("img/gmanlo.bmp");
+    textures.player[down][open].loadFromFile("img/gmando.bmp");
+    textures.player[right][open].loadFromFile("img/gmanro.bmp");
+    textures.player[up][closed].loadFromFile("img/gmanuc.bmp");
+    textures.player[left][closed].loadFromFile("img/gmanlc.bmp");
+    textures.player[down][closed].loadFromFile("img/gmandc.bmp");
+    textures.player[right][closed].loadFromFile("img/gmanrc.bmp");
 
-    dying_textures[0] = player_textures[up][closed];
-    dying_textures[1] = player_textures[up][open];
-    dying_textures[2].loadFromFile("img/dead3.bmp");
-    dying_textures[3].loadFromFile("img/dead4.bmp");
-    dying_textures[4].loadFromFile("img/dead5.bmp");
-    dying_textures[5].loadFromFile("img/dead6.bmp");
+    textures.death[0] = textures.player[up][closed];
+    textures.death[1] = textures.player[up][open];
+    textures.death[2].loadFromFile("img/dead3.bmp");
+    textures.death[3].loadFromFile("img/dead4.bmp");
+    textures.death[4].loadFromFile("img/dead5.bmp");
+    textures.death[5].loadFromFile("img/dead6.bmp");
+
+    sounds.chomp.loadFromFile("snd/chomp.wav");
+    sounds.dead.loadFromFile("snd/dead.wav");
+    sounds.gover.loadFromFile("snd/gover.wav");
+    sounds.wdone.loadFromFile("snd/wdone.wav");
 
     std::ifstream stream("dodger-1.0/dodger.dat");
 
@@ -67,10 +72,10 @@ void Dodger::load_level()
             int cell = level.data[line][col];
             if (cell != Level::player) {
                 level_data[line][col] = cell;
-                sprites[line][col].setTexture(cell_textures[cell]);
+                sprites[line][col].setTexture(textures.cell[cell]);
             } else {
                 level_data[line][col] = Level::grid;
-                sprites[line][col].setTexture(cell_textures[Level::grid]);
+                sprites[line][col].setTexture(textures.cell[Level::grid]);
                 initial_player_line = line;
                 initial_player_col = col;
                 player_line = line;
@@ -82,7 +87,7 @@ void Dodger::load_level()
     // one frame closed followed by two frames open and one frame closed
     player_direction = up;
     player_anim = 1;
-    dying = false;
+    death = false;
     food_count = level.food_count;
 }
 
@@ -147,22 +152,22 @@ void Dodger::update()
         return;
     }
 
-    if (dying) {
-        dying_anim++;
-        if (dying_anim == dying_anim_length) {
+    if (death) {
+        death_anim++;
+        if (death_anim == death_anim_length) {
             if (life_count > 0) {
                 sprites[player_line][player_col].setTexture(
-                        cell_textures[level_data[player_line][player_col]]);
+                        textures.cell[level_data[player_line][player_col]]);
                 player_line = initial_player_line;
                 player_col = initial_player_col;
-                dying = false;
+                death = false;
             } else {
                 // TODO: game over screen
                 std::cout << "game over" << std::endl;
             }
             return;
         }
-        sprites[player_line][player_col].setTexture(dying_textures[dying_anim]);
+        sprites[player_line][player_col].setTexture(textures.death[death_anim]);
         return;
     }
 
@@ -197,7 +202,7 @@ void Dodger::update()
         new_cell = level_data[new_player_line][new_player_col];
     } else {
         // draw a grid on the previous position and update the position
-        sprites[player_line][player_col].setTexture(cell_textures[Level::grid]);
+        sprites[player_line][player_col].setTexture(textures.cell[Level::grid]);
         player_line = new_player_line;
         player_col = new_player_col;
         player_anim = (player_anim + 1) % 4;
@@ -207,9 +212,9 @@ void Dodger::update()
     // TODO: lasers can kill too
     if (new_cell == Level::skull) {
         life_count--;
-        dying = true;
-        dying_anim = 0;
-        sprites[player_line][player_col].setTexture(dying_textures[dying_anim]);
+        death = true;
+        death_anim = 0;
+        sprites[player_line][player_col].setTexture(textures.death[death_anim]);
         return; // can't eat if dead
     }
 
@@ -218,6 +223,8 @@ void Dodger::update()
             || new_cell == Level::cherry) {
         food_count--;
         level_data[new_player_line][new_player_col] = Level::grid;
+
+        play_sound(sounds.chomp);
 
         switch (new_cell) {
         case Level::apple:
@@ -234,7 +241,7 @@ void Dodger::update()
 
     AnimState anim_state = (AnimState) (player_anim / 2);
     sprites[player_line][player_col].setTexture(
-            player_textures[player_direction][anim_state]);
+            textures.player[player_direction][anim_state]);
 }
 
 void Dodger::draw()
@@ -246,6 +253,24 @@ void Dodger::draw()
         }
     }
     window.display();
+}
+
+static float random_float(float a, float b) {
+    float random = ((float) rand()) / (float) RAND_MAX;
+    float diff = b - a;
+    float r = random * diff;
+    return a + r;
+}
+
+void Dodger::play_sound(const sf::SoundBuffer& sound)
+{
+    static sf::Sound s[50];
+    static unsigned next = 0;
+    next = (next + 1) % 50;
+
+    s[next].setPitch(random_float(0.95f, 1.1f));
+    s[next].setBuffer(sound);
+    s[next].play();
 }
 
 void error(const char* format, ...)

@@ -41,7 +41,8 @@ ldflags := \
 	-L $(SFML)/lib \
 	-lsfml-window \
 	-lsfml-graphics \
-	-lsfml-system
+	-lsfml-system \
+	-lsfml-audio
 
 target := dodger-remake
 
