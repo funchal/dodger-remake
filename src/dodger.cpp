@@ -15,6 +15,12 @@ void Dodger::init()
     window.setFramerateLimit(7);
     window.setVerticalSyncEnabled(true);
 
+    sf::Image icon;
+    icon.loadFromFile("ico/dodger.bmp");
+
+    sf::Vector2u icon_size = icon.getSize();
+    window.setIcon(icon_size.x, icon_size.y, icon.getPixelsPtr());
+
     for (int line = 0; line != Level::num_lines; line++) {
         for (int col = 0; col != Level::num_cols; col++) {
             sprites[line][col].setPosition(24 * (1.5 + col), 24 * (3 + line));

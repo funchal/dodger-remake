@@ -152,7 +152,7 @@ $(icodir)/%.ico: $(originalgame) $(makefile) | $(icodir)
 	$(exists) $@
 
 $(icodir)/%.bmp: $(icodir)/%.ico
-	convert $< $@
+	convert $< BMP3:$@
 
 $(snddir)/%.wav: $(originalgame) $(makefile) | $(snddir)
 	$(rm) $@
