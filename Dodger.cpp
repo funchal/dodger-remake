@@ -1,196 +1,15 @@
-#include <SFML/Graphics.hpp>
+#include "Dodger.hpp"
 #include <cstdlib>
-#include <vector>
 #include <fstream>
-#include <cstring>
-#include <cassert>
-#include <iostream>
 #include <cstdarg>
 #include <exception>
-
-enum { n = 0, e = 1, s = 2, w = 3 };
-
-void error(const char* format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    vfprintf(stderr, format, args);
-    va_end(args);
-}
-
-void fatal(const char* format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    vfprintf(stderr, format, args);
-    va_end(args);
-    abort();
-}
-
-class Level
-{
-public:
-    Level();
-
-//private:
-
-    enum {
-        num_lines = 20,
-        num_cols = 25,
-    };
-
-    enum {
-        blank = 0,
-        grid,
-        wall,
-        apple,
-        sberry,
-        cherry,
-        skull,
-        player,
-        num_cell_types
-    };
-
-    bool enemies[4];
-    int data[num_lines][num_cols];
-    int food_count;
-};
-
-Level::Level()
-: enemies(), data(), food_count()
-{}
-
-class LevelPack
-{
-public:
-    void load(const char* filename);
-
-//private:
-    std::vector<Level> levels;
-};
-
-void LevelPack::load(const char* filename)
-{
-    try {
-        std::ifstream stream;
-        stream.exceptions(std::ios_base::badbit |
-                          std::ios_base::failbit |
-                          std::ios_base::eofbit);
-        stream.open(filename, std::ios_base::binary);
-
-        std::string str;
-        while (true) {
-            // new Level
-            Level level;
-            bool found_player = false;
-
-            // parse positions of enemies
-            std::getline(stream, str);
-            std::string::iterator pos;
-            static const std::string enemies_format("nesw");
-            assert(str.length() >= 1);
-            for (pos = str.begin(); pos != str.end(); pos++) {
-                size_t enemy = enemies_format.find(*pos);
-                assert(enemy != std::string::npos);
-                level.enemies[enemy] = true;
-            }
-
-            // parse grid
-            for (int line = 0; line != Level::num_lines; line++) {
-                std::getline(stream, str);
-                assert(str.length() == Level::num_cols);
-                for (int col = 0; col != Level::num_cols; col++) {
-                    int cell = str[col] - '0';
-                    assert(0 <= cell && cell < Level::num_cell_types);
-                    switch (cell) {
-                        case Level::player:
-                            assert(!found_player);
-                            found_player = true;
-                            break;
-                        case Level::apple:
-                        case Level::cherry:
-                        case Level::sberry:
-                            level.food_count++;
-                            break;
-                        default:
-                            break;
-                    }
-                    level.data[line][col] = cell;
-                }
-            }
-            assert(found_player);
-            assert(level.food_count > 0);
-
-            levels.push_back(level);
-
-            stream.exceptions(std::ios_base::badbit |
-                              std::ios_base::failbit);
-
-            // check for end of file
-            if (stream.peek() == EOF) {
-                break;
-            } else {
-                stream.exceptions(std::ios_base::badbit |
-                                  std::ios_base::failbit |
-                                  std::ios_base::eofbit);
-                // check for empty line between levels
-                std::getline(stream, str);
-                assert(str.length() == 0);
-            }
-        }
-    } catch(...) {
-        error("Failed to load file '%s'\n", filename);
-    }
-}
-
-class Dodger
-{
-public:
-    void run();
-    int score;
-
-//private:
-    void loop();
-    void update();
-    void draw();
-
-    sf::RenderWindow window;
-    sf::Texture cell_textures[Level::num_cell_types - 1];
-
-    enum Direction {
-        up,
-        left,
-        down,
-        right,
-        num_directions,
-    };
-
-    enum AnimState {
-        closed = 0,
-        open,
-        num_states,
-    };
-
-    sf::Texture player_textures[num_directions][num_states];
-
-    int level_data[Level::num_lines][Level::num_cols];
-    sf::Sprite sprites[Level::num_lines][Level::num_cols];
-
-    LevelPack level_pack;
-
-    int player_line;
-    int player_col;
-    Direction player_direction;
-    int player_anim;
-    int food_count;
-};
 
 void Dodger::run()
 {
     int width = (Level::num_cols + 3) * 24;
     int height = (Level::num_lines + 4.5) * 24;
     window.create(sf::VideoMode(width, height), "Dodger");
-    window.setFramerateLimit(4);
+    window.setFramerateLimit(7);
     window.setVerticalSyncEnabled(true);
 
     for (int line = 0; line != Level::num_lines; line++) {
@@ -216,11 +35,15 @@ void Dodger::run()
     player_textures[down][closed].loadFromFile("gmandc.bmp");
     player_textures[right][closed].loadFromFile("gmanrc.bmp");
 
-    level_pack.load("originallevels.txt");
+    try {
+        load_levels("originallevels.txt");
+    } catch(...) {
+        error("Failed to load levels");
+    }
 
     for (int line = 0; line != Level::num_lines; line++) {
         for (int col = 0; col != Level::num_cols; col++) {
-            int cell = level_pack.levels[0].data[line][col];
+            int cell = levels[0].data[line][col];
             if (cell != Level::player) {
                 level_data[line][col] = cell;
                 sprites[line][col].setTexture(cell_textures[cell]);
@@ -360,6 +183,112 @@ void Dodger::draw()
         }
     }
     window.display();
+}
+
+void Dodger::load_levels(const char* filename)
+{
+    std::ifstream stream;
+    stream.exceptions(std::ios_base::badbit |
+                      std::ios_base::failbit |
+                      std::ios_base::eofbit);
+    stream.open(filename, std::ios_base::binary);
+
+    std::string str;
+    while (true) {
+        // new Level
+        Level level;
+        bool found_player = false;
+
+        // parse positions of enemies
+        std::getline(stream, str);
+        std::string::iterator pos;
+        static const std::string enemies_format("nesw");
+        if (str.length() < 1) {
+            error("Invalid level format: no enemies");
+        }
+        for (pos = str.begin(); pos != str.end(); pos++) {
+            size_t enemy = enemies_format.find(*pos);
+            if (enemy == std::string::npos) {
+                error("Invalid level format: unrecognized enemy direction");
+            }
+            level.enemies[enemy] = true;
+        }
+
+        // parse grid
+        for (int line = 0; line != Level::num_lines; line++) {
+            std::getline(stream, str);
+            if (str.length() != Level::num_cols) {
+                error("Invalid level format: too many columns");
+            }
+            for (int col = 0; col != Level::num_cols; col++) {
+                int cell = str[col] - '0';
+                if (cell < 0 || cell >= Level::num_cell_types) {
+                    error("Invalid level format: unrecognized cell type");
+                }
+                switch (cell) {
+                    case Level::player:
+                        if (found_player) {
+                            error("Invalid level format: multiple players");
+                        }
+                        found_player = true;
+                        break;
+                    case Level::apple:
+                    case Level::cherry:
+                    case Level::sberry:
+                        level.food_count++;
+                        break;
+                    default:
+                        break;
+                }
+                level.data[line][col] = cell;
+            }
+        }
+
+        if (!found_player) {
+            error("Invalid level format: player not found");
+        }
+
+        if (level.food_count == 0) {
+            error("Invalid level format: no food");
+        }
+
+        levels.push_back(level);
+
+        stream.exceptions(std::ios_base::badbit |
+                          std::ios_base::failbit);
+
+        // check for end of file
+        if (stream.peek() == EOF) {
+            break;
+        }
+
+        stream.exceptions(std::ios_base::badbit |
+                          std::ios_base::failbit |
+                          std::ios_base::eofbit);
+        // check for empty line between levels
+        std::getline(stream, str);
+        if (str.length() != 0) {
+            error("Invalid level format: expected empty line");
+        }
+    }
+}
+
+void error(const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    vfprintf(stderr, format, args);
+    va_end(args);
+    throw std::exception();
+}
+
+void fatal(const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    vfprintf(stderr, format, args);
+    va_end(args);
+    abort();
 }
 
 int main(int, char*[])

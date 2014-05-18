@@ -11,24 +11,29 @@ CPPFLAGS += -I $(SFML)/include
 CXXFLAGS = -g -fmessage-length=0 -O0
 
 LD = g++
-LDFLAGS = -rdynamic
-LDLIBS = -L $(SFML)/lib -lsfml-window -lsfml-graphics -lsfml-system
+LDFLAGS = -rdynamic --enable-new-dtags -Wl,-rpath $(SFML)/lib
+LDFLAGS += -L $(SFML)/lib -lsfml-window -lsfml-graphics -lsfml-system
 
-TARGET = dodger-remake
+TARGET = Dodger
 OBJS = \
-	main.o
+	Dodger.o
 
 .PHONY: check
 check: all
-	LD_LIBRARY_PATH=$(SFML)/lib ./$(TARGET)
+	./$(TARGET)
 
 .PHONY: all
 all: $(TARGET)
-	
+
+.PHONY: clean
+clean:
+	rm -f $(shell find . -name '*.o')
+	rm -f $(shell find . -name '*.d')
+
 $(TARGET): $(OBJS)
-	$(LD) $^ -o $@ $(CXXFLAGS) $(LDFLAGS) $(LDLIBS)
+	$(LD) $^ -o $@ $(CXXFLAGS) $(LDFLAGS)
 
 %.o: %.cpp $(MAKEFILE_LIST)
 	$(CXX) -c $< -o $@ $(CPPFLAGS) $(CXXFLAGS)
-	
+
 -include $(shell find . -name '*.d')
