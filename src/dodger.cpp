@@ -1,4 +1,5 @@
 #include "dodger.hpp"
+#include "level.hpp"
 #include <cstdlib>
 #include <fstream>
 #include <cstdarg>
@@ -42,11 +43,18 @@ void Dodger::run()
     dying_textures[4].loadFromFile("img/dead5.bmp");
     dying_textures[5].loadFromFile("img/dead6.bmp");
 
-    try {
-        load_levels("originallevels.txt");
-    } catch(...) {
-        error("Failed to load levels");
-    }
+    std::ifstream stream("dodger-1.0/dodger.dat");
+
+    Level level;
+    //try {
+        stream.ignore(1);
+        while (level.import(stream)) {
+            levels.push_back(level);
+        }
+    //} catch(...) {
+    //}
+
+    stream.close();
 
     level_number = 1;
     for (int line = 0; line != Level::num_lines; line++) {
@@ -213,94 +221,6 @@ void Dodger::draw()
         }
     }
     window.display();
-}
-
-void Dodger::load_levels(const char* filename)
-{
-    std::ifstream stream;
-    stream.exceptions(std::ios_base::badbit |
-                      std::ios_base::failbit |
-                      std::ios_base::eofbit);
-    stream.open(filename, std::ios_base::binary);
-
-    std::string str;
-    while (true) {
-        // new Level
-        Level level;
-        bool found_player = false;
-
-        // parse positions of enemies
-        std::getline(stream, str);
-        std::string::iterator pos;
-        static const std::string enemies_format("nesw");
-        if (str.length() < 1) {
-            error("Invalid level format: no enemies");
-        }
-        for (pos = str.begin(); pos != str.end(); pos++) {
-            size_t enemy = enemies_format.find(*pos);
-            if (enemy == std::string::npos) {
-                error("Invalid level format: unrecognized enemy direction");
-            }
-            level.enemies[enemy] = true;
-        }
-
-        // parse grid
-        for (int line = 0; line != Level::num_lines; line++) {
-            std::getline(stream, str);
-            if (str.length() != Level::num_cols) {
-                error("Invalid level format: too many columns");
-            }
-            for (int col = 0; col != Level::num_cols; col++) {
-                int cell = str[col] - '0';
-                if (cell < 0 || cell >= Level::num_cell_types) {
-                    error("Invalid level format: unrecognized cell type");
-                }
-                switch (cell) {
-                    case Level::player:
-                        if (found_player) {
-                            error("Invalid level format: multiple players");
-                        }
-                        found_player = true;
-                        break;
-                    case Level::apple:
-                    case Level::cherry:
-                    case Level::sberry:
-                        level.food_count++;
-                        break;
-                    default:
-                        break;
-                }
-                level.data[line][col] = cell;
-            }
-        }
-
-        if (!found_player) {
-            error("Invalid level format: player not found");
-        }
-
-        if (level.food_count == 0) {
-            error("Invalid level format: no food");
-        }
-
-        levels.push_back(level);
-
-        stream.exceptions(std::ios_base::badbit |
-                          std::ios_base::failbit);
-
-        // check for end of file
-        if (stream.peek() == EOF) {
-            break;
-        }
-
-        stream.exceptions(std::ios_base::badbit |
-                          std::ios_base::failbit |
-                          std::ios_base::eofbit);
-        // check for empty line between levels
-        std::getline(stream, str);
-        if (str.length() != 0) {
-            error("Invalid level format: expected empty line");
-        }
-    }
 }
 
 void error(const char* format, ...)

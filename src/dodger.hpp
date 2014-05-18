@@ -1,39 +1,9 @@
 #ifndef dodger_hpp
 #define dodger_hpp
 
+#include "level.hpp"
 #include <SFML/Graphics.hpp>
 #include <vector>
-
-struct Level
-{
-    enum { 
-        n,
-        e,
-        s,
-        w,
-    };
-
-    enum {
-        num_lines = 20,
-        num_cols = 25,
-    };
-
-    enum {
-        blank,
-        grid,
-        wall,
-        apple,
-        sberry,
-        cherry,
-        skull,
-        player,
-        num_cell_types,
-    };
-
-    bool enemies[4];
-    int data[num_lines][num_cols];
-    int food_count;
-};
 
 class Dodger
 {
@@ -45,8 +15,6 @@ private:
     void loop();
     void update();
     void draw();
-
-    void load_levels(const char* filename);
 
     sf::RenderWindow window;
     sf::Texture cell_textures[Level::num_cell_types - 1];

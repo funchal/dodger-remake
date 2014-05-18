@@ -48,6 +48,7 @@ target := dodger-remake
 objs := \
 	$(addprefix $(objdir)/, \
 		dodger.o \
+		level.o \
 	)
 
 resources := \
