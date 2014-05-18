@@ -8,6 +8,8 @@
 #include <cstdarg>
 #include <exception>
 
+enum { n = 0, e = 1, s = 2, w = 3 };
+
 void error(const char* format, ...)
 {
     va_list args;
@@ -31,7 +33,6 @@ public:
     Level();
 
 //private:
-    enum { n = 0, e = 1, s = 2, w = 3 };
 
     enum {
         num_lines = 20,
@@ -296,39 +297,46 @@ void Dodger::update()
             break;
     }
 
+    int new_cell = level_data[new_player_line][new_player_col];
+
     // don't move if blocked
     if (new_player_line < 0
             || new_player_line >= Level::num_lines
             || new_player_col < 0
             || new_player_col >= Level::num_cols
-            || level_data[new_player_line][new_player_col] == Level::blank
-            || level_data[new_player_line][new_player_col] == Level::wall) {
+            || new_cell == Level::blank
+            || new_cell == Level::wall) {
         new_player_line = player_line;
         new_player_col = player_col;
+        new_cell = level_data[new_player_line][new_player_col];
     } else {
         player_anim = (player_anim + 1) % 4;
     }
 
     // check if dead
     // TODO: lasers can kill too
-    if (level_data[new_player_line][new_player_col] == Level::skull) {
+    if (new_cell == Level::skull) {
         // TODO: death animation and lose one life.
         return; // can't eat if dead
     }
 
-    switch(level_data[new_player_line][new_player_col]) {
-    case Level::apple:
-        score += 20;
+    if (new_cell == Level::apple
+            || new_cell == Level::sberry
+            || new_cell == Level::cherry) {
         food_count--;
-        break;
-    case Level::sberry:
-        score += 30;
-        food_count--;
-        break;
-    case Level::cherry:
-        score += 50;
-        food_count--;
-        break;
+        level_data[new_player_line][new_player_col] = Level::grid;
+
+        switch (new_cell) {
+        case Level::apple:
+            score += 20;
+            break;
+        case Level::sberry:
+            score += 30;
+            break;
+        case Level::cherry:
+            score += 50;
+            break;
+        }
     }
 
     if (food_count == 0) {
