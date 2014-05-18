@@ -1,5 +1,5 @@
-#ifndef Dodger_hpp
-#define Dodger_hpp
+#ifndef dodger_hpp
+#define dodger_hpp
 
 #include <SFML/Graphics.hpp>
 #include <vector>
