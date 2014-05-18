@@ -18,22 +18,22 @@ void Dodger::run()
         }
     }
 
-    cell_textures[Level::blank].loadFromFile("blank.bmp");
-    cell_textures[Level::grid].loadFromFile("grid.bmp");
-    cell_textures[Level::wall].loadFromFile("wall.bmp");
-    cell_textures[Level::apple].loadFromFile("apple.bmp");
-    cell_textures[Level::sberry].loadFromFile("sberry.bmp");
-    cell_textures[Level::cherry].loadFromFile("cherry.bmp");
-    cell_textures[Level::skull].loadFromFile("skull.bmp");
+    cell_textures[Level::blank].loadFromFile("img/blank.bmp");
+    cell_textures[Level::grid].loadFromFile("img/grid.bmp");
+    cell_textures[Level::wall].loadFromFile("img/wall.bmp");
+    cell_textures[Level::apple].loadFromFile("img/apple.bmp");
+    cell_textures[Level::sberry].loadFromFile("img/sberry.bmp");
+    cell_textures[Level::cherry].loadFromFile("img/cherry.bmp");
+    cell_textures[Level::skull].loadFromFile("img/skull.bmp");
 
-    player_textures[up][open].loadFromFile("gmanuo.bmp");
-    player_textures[left][open].loadFromFile("gmanlo.bmp");
-    player_textures[down][open].loadFromFile("gmando.bmp");
-    player_textures[right][open].loadFromFile("gmanro.bmp");
-    player_textures[up][closed].loadFromFile("gmanuc.bmp");
-    player_textures[left][closed].loadFromFile("gmanlc.bmp");
-    player_textures[down][closed].loadFromFile("gmandc.bmp");
-    player_textures[right][closed].loadFromFile("gmanrc.bmp");
+    player_textures[up][open].loadFromFile("img/gmanuo.bmp");
+    player_textures[left][open].loadFromFile("img/gmanlo.bmp");
+    player_textures[down][open].loadFromFile("img/gmando.bmp");
+    player_textures[right][open].loadFromFile("img/gmanro.bmp");
+    player_textures[up][closed].loadFromFile("img/gmanuc.bmp");
+    player_textures[left][closed].loadFromFile("img/gmanlc.bmp");
+    player_textures[down][closed].loadFromFile("img/gmandc.bmp");
+    player_textures[right][closed].loadFromFile("img/gmanrc.bmp");
 
     try {
         load_levels("originallevels.txt");
