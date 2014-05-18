@@ -35,15 +35,23 @@ void Dodger::run()
     player_textures[down][closed].loadFromFile("gmandc.bmp");
     player_textures[right][closed].loadFromFile("gmanrc.bmp");
 
+    dying_textures[0] = player_textures[up][closed];
+    dying_textures[1] = player_textures[up][open];
+    dying_textures[2].loadFromFile("dead3.bmp");
+    dying_textures[3].loadFromFile("dead4.bmp");
+    dying_textures[4].loadFromFile("dead5.bmp");
+    dying_textures[5].loadFromFile("dead6.bmp");
+
     try {
         load_levels("originallevels.txt");
     } catch(...) {
         error("Failed to load levels");
     }
 
+    level_number = 1;
     for (int line = 0; line != Level::num_lines; line++) {
         for (int col = 0; col != Level::num_cols; col++) {
-            int cell = levels[0].data[line][col];
+            int cell = levels[level_number - 1].data[line][col];
             if (cell != Level::player) {
                 level_data[line][col] = cell;
                 sprites[line][col].setTexture(cell_textures[cell]);
@@ -59,6 +67,8 @@ void Dodger::run()
     // one frame closed followed by two frames open and one frame closed
     player_direction = up;
     player_anim = 1;
+    life_count = 3;
+    dying = false;
 
     loop();
 
@@ -101,6 +111,20 @@ void Dodger::loop()
 
 void Dodger::update()
 {
+    if (dying) {
+        dying_anim++;
+        if (dying_anim == dying_anim_length) {
+            if (life_count > 0) {
+                // TODO: reset level
+            } else {
+                // TODO: game over screen
+            }
+            return;
+        }
+        sprites[player_line][player_col].setTexture(dying_textures[dying_anim]);
+        return;
+    }
+
     int new_player_line = player_line;
     int new_player_col = player_col;
     switch (player_direction) {
@@ -129,17 +153,22 @@ void Dodger::update()
             || new_player_col >= Level::num_cols
             || new_cell == Level::blank
             || new_cell == Level::wall) {
-        new_player_line = player_line;
-        new_player_col = player_col;
         new_cell = level_data[new_player_line][new_player_col];
     } else {
+        // draw a grid on the previous position and update the position
+        sprites[player_line][player_col].setTexture(cell_textures[Level::grid]);
+        player_line = new_player_line;
+        player_col = new_player_col;
         player_anim = (player_anim + 1) % 4;
     }
 
     // check if dead
     // TODO: lasers can kill too
     if (new_cell == Level::skull) {
-        // TODO: death animation and lose one life.
+        life_count--;
+        dying = true;
+        dying_anim = 0;
+        sprites[player_line][player_col].setTexture(dying_textures[dying_anim]);
         return; // can't eat if dead
     }
 
@@ -163,12 +192,13 @@ void Dodger::update()
     }
 
     if (food_count == 0) {
-        // TODO: freeze image, pop-up with password to next level.
+        if (level_number == levels.size()) {
+            // TODO: well done screen
+        } else {
+            // TODO: freeze image, pop-up with password to next level.
+        }
     }
 
-    sprites[player_line][player_col].setTexture(cell_textures[Level::grid]);
-    player_line = new_player_line;
-    player_col = new_player_col;
     AnimState anim_state = (AnimState) (player_anim / 2);
     sprites[player_line][player_col].setTexture(
             player_textures[player_direction][anim_state]);
