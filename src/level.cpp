@@ -89,6 +89,14 @@ bool Level::load(std::istream& stream)
 
 bool Level::import(std::istream& stream)
 {
+    stream.exceptions(std::istream::badbit |
+                      std::istream::failbit);
+
+    // check for end of file
+    if (stream.peek() == EOF) {
+        return false;
+    }
+
     stream.exceptions(~std::istream::goodbit);
 
     // parse positions of enemies
@@ -149,16 +157,6 @@ bool Level::import(std::istream& stream)
     }
 
     data[initial_player_line][initial_player_col] = player;
-
-    stream.exceptions(std::istream::badbit |
-                      std::istream::failbit);
-
-    // check for end of file
-    if (stream.peek() == EOF) {
-        return false;
-    }
-
-    stream.exceptions(~std::istream::goodbit);
 
     return true;
 }
