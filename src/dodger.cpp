@@ -1,4 +1,4 @@
-#include "Dodger.hpp"
+#include "dodger.hpp"
 #include <cstdlib>
 #include <fstream>
 #include <cstdarg>

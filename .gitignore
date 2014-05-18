@@ -1,2 +1,5 @@
-*.d
-*.o
+img
+ico
+snd
+obj
+dodger-remake
