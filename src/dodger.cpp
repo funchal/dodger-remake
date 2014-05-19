@@ -1,17 +1,18 @@
 #include "dodger.hpp"
 #include "level.hpp"
 #include "enemy.hpp"
+#include "score_panel.hpp"
 #include <cstdlib>
 #include <fstream>
 #include <cstdarg>
 #include <exception>
-
+#include <sstream>
 #include <iostream>
 
 void Dodger::init()
 {
-    int width = (Level::num_cols + 3) * 24;
-    int height = (Level::num_lines + 4.5) * 24;
+    int width = (Level::num_cols + 4) * 24;
+    int height = (Level::num_lines + 5) * 24;
     window.create(sf::VideoMode(width, height), "dodger-remake");
     window.setFramerateLimit(7);
     window.setVerticalSyncEnabled(true);
@@ -68,6 +69,9 @@ void Dodger::init()
     //} catch(...) {
     //}
 
+    high_score = 500; // TODO;
+    score_panel.set_high_score(high_score);
+
     stream.close();
 }
 
@@ -97,6 +101,8 @@ void Dodger::new_level()
 {
     level = levels[level_number - 1];
 
+    score_panel.set_level(level_number);
+
     for (int line = 0; line != Level::num_lines; line++) {
         for (int col = 0; col != Level::num_cols; col++) {
             int cell = level.data[line][col];
@@ -122,6 +128,11 @@ void Dodger::new_game()
 {
     life_count = 3;
     level_number = 1;
+    score = 0;
+
+    score_panel.set_num_lives(life_count);
+    score_panel.set_level(level_number);
+    score_panel.set_score(score);
 
     new_level();
 }
@@ -134,6 +145,7 @@ void Dodger::run()
 
     loop();
 
+    // TODO: save high_score
     window.close();
 }
 
@@ -253,6 +265,7 @@ void Dodger::update()
     if (hit || new_cell == Level::skull) {
         play_sound(sounds.dead);
         life_count--;
+        score_panel.set_num_lives(life_count);
         death = true;
         death_anim = 0;
         sprites[player_line][player_col].setTexture(textures.death[death_anim]);
@@ -278,6 +291,12 @@ void Dodger::update()
             score += 50;
             break;
         }
+
+        score_panel.set_score(score);
+        if (score > high_score) {
+            high_score = score;
+            score_panel.set_high_score(high_score);
+        }
     }
 
     AnimState anim_state = (AnimState) (player_anim / 2);
@@ -288,6 +307,9 @@ void Dodger::update()
 void Dodger::draw()
 {
     window.clear();
+
+    score_panel.draw(window);
+
     for (int line = 0; line != Level::num_lines; line++) {
         for (int col = 0; col != Level::num_cols; col++) {
             window.draw(sprites[line][col]);
@@ -322,9 +344,9 @@ void Dodger::play_sound(const sf::SoundBuffer& sound)
     s[next].play();
 }
 
-void set_position(sf::Sprite& sprite, int line, int col)
+void set_position(sf::Sprite& sprite, float line, float col)
 {
-    sprite.setPosition(24 * (1.5 + col), 24 * (3 + line));
+    sprite.setPosition(24 * (2 + col), 24 * (3 + line));
 }
 
 void error(const char* format, ...)

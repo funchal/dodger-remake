@@ -3,6 +3,7 @@
 
 #include "level.hpp"
 #include "enemy.hpp"
+#include "score_panel.hpp"
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
 #include <vector>
@@ -12,6 +13,7 @@ class Dodger
 public:
     void run();
     int score;
+    int high_score;
 
 private:
     void init();
@@ -58,6 +60,7 @@ private:
 
     std::vector<Level> levels;
     Level level;
+    ScorePanel score_panel;
 
     int player_line;
     int player_col;
@@ -72,7 +75,7 @@ private:
     std::vector<Enemy> enemies;
 };
 
-void set_position(sf::Sprite& sprite, int line, int col);
+void set_position(sf::Sprite& sprite, float line, float col);
 
 void error(const char* format, ...);
 void fatal(const char* format, ...);

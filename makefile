@@ -51,6 +51,7 @@ objs := \
 		dodger.o \
 		level.o \
 		enemy.o \
+		score_panel.o \
 	)
 
 resources := \
