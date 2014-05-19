@@ -50,6 +50,7 @@ objs := \
 	$(addprefix $(objdir)/, \
 		dodger.o \
 		level.o \
+		enemy.o \
 	)
 
 resources := \

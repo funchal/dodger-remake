@@ -1,5 +1,6 @@
 #include "dodger.hpp"
 #include "level.hpp"
+#include "enemy.hpp"
 #include <cstdlib>
 #include <fstream>
 #include <cstdarg>
@@ -23,7 +24,7 @@ void Dodger::init()
 
     for (int line = 0; line != Level::num_lines; line++) {
         for (int col = 0; col != Level::num_cols; col++) {
-            sprites[line][col].setPosition(24 * (1.5 + col), 24 * (3 + line));
+            set_position(sprites[line][col], line, col);
         }
     }
 
@@ -84,6 +85,12 @@ void Dodger::new_life()
 
     // one frame closed followed by two frames open and one frame closed
     player_anim = 1;
+
+    std::vector<Enemy>::iterator enemy;
+    for (enemy = enemies.begin(); enemy != enemies.end(); enemy++) {
+        enemy->reset();
+    }
+
 }
 
 void Dodger::new_level()
@@ -98,6 +105,13 @@ void Dodger::new_level()
             } else {
                 sprites[line][col].setTexture(textures.cell[Level::grid]);
             }
+        }
+    }
+
+    enemies.clear();
+    for (int i = 0; i < Level::num_enemies; i++) {
+        if (level.enemies[i]) {
+            enemies.push_back(Enemy(i, level.speed));
         }
     }
 
@@ -171,6 +185,7 @@ void Dodger::update()
         std::cout << "level cleared" << std::endl;
         if (level_number == levels.size()) {
             // TODO: well done screen
+            play_sound(sounds.wdone);
             std::cout << "well done" << std::endl;
             new_game();
         } else {
@@ -190,6 +205,7 @@ void Dodger::update()
                 new_life();
             } else {
                 // TODO: game over screen
+                play_sound(sounds.gover);
                 std::cout << "game over" << std::endl;
                 new_game();
             }
@@ -211,7 +227,7 @@ void Dodger::update()
             || new_player_col >= Level::num_cols
             || new_cell == Level::blank
             || new_cell == Level::wall) {
-        new_cell = level.data[new_player_line][new_player_col];
+        new_cell = level.data[player_line][player_col];
     } else if (delta_line != 0 or delta_col != 0) {
         // draw a grid on the previous position and update the position
         sprites[player_line][player_col].setTexture(textures.cell[Level::grid]);
@@ -220,9 +236,22 @@ void Dodger::update()
         player_anim = (player_anim + 1) % 4;
     }
 
-    // check if dead
-    // TODO: lasers can kill too
-    if (new_cell == Level::skull) {
+    // check if dead and update laser shots
+    // need to check if dodger is hit before AND after updating the laser shots
+    // to prevent the dodger and the shot to pass each other with no hit.
+    bool hit = false;
+    std::vector<Enemy>::iterator enemy;
+    for (enemy = enemies.begin(); enemy != enemies.end(); enemy++) {
+        if (enemy->is_laser_here(player_line, player_col)) {
+            hit = true;
+        }
+        enemy->update(player_line, player_col);
+        if (enemy->is_laser_here(player_line, player_col)) {
+            hit = true;
+        }
+    }
+    if (hit || new_cell == Level::skull) {
+        play_sound(sounds.dead);
         life_count--;
         death = true;
         death_anim = 0;
@@ -264,6 +293,14 @@ void Dodger::draw()
             window.draw(sprites[line][col]);
         }
     }
+
+    if (! death) {
+        std::vector<Enemy>::iterator enemy;
+        for (enemy = enemies.begin(); enemy != enemies.end(); enemy++) {
+            enemy->draw(window, (level.data));
+        }
+    }
+
     window.display();
 }
 
@@ -283,6 +320,11 @@ void Dodger::play_sound(const sf::SoundBuffer& sound)
     s[next].setPitch(random_float(0.95f, 1.1f));
     s[next].setBuffer(sound);
     s[next].play();
+}
+
+void set_position(sf::Sprite& sprite, int line, int col)
+{
+    sprite.setPosition(24 * (1.5 + col), 24 * (3 + line));
 }
 
 void error(const char* format, ...)

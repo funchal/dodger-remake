@@ -11,10 +11,10 @@ public:
 
 //private:
     enum {
-        n,
-        e,
         s,
         w,
+        n,
+        e,
         num_enemies,
     };
 

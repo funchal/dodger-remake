@@ -2,6 +2,7 @@
 #define dodger_hpp
 
 #include "level.hpp"
+#include "enemy.hpp"
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
 #include <vector>
@@ -68,7 +69,10 @@ private:
     bool death;
     int death_anim;
     unsigned level_number;
+    std::vector<Enemy> enemies;
 };
+
+void set_position(sf::Sprite& sprite, int line, int col);
 
 void error(const char* format, ...);
 void fatal(const char* format, ...);
