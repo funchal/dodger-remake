@@ -21,11 +21,28 @@ private:
     void new_level();
     void new_game();
     void loop();
+    void process_events();
     void update();
     void draw();
     void play_sound(const sf::SoundBuffer& sound);
+    void load_screen(int data[Level::num_lines][Level::num_cols]);
+    void welcome_screen();
+    void play();
+    void password_screen();
+    void dead();
+    void game_over_screen();
+    void well_done_screen();
+    bool hit_by_laser();
+    void update_enemies();
+    void update_dodger_position();
+    void check_if_eating(int new_cell);
+
 
     sf::RenderWindow window;
+
+    enum GameState {
+        welcome, playing, password, dying, game_over, well_done
+    } game_state;
 
     enum Direction {
         up,
@@ -69,10 +86,10 @@ private:
     Direction player_direction;
     int player_anim;
     int life_count;
-    bool death;
-    int death_anim;
     unsigned level_number;
+    bool next_screen;
     std::vector<Enemy> enemies;
+    bool running;
 };
 
 void set_position(sf::Sprite& sprite, float line, float col);

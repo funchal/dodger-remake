@@ -2,11 +2,12 @@
 #include "level.hpp"
 #include "enemy.hpp"
 #include "score_panel.hpp"
+#include "screens.hpp"
 #include <cstdlib>
 #include <fstream>
 #include <cstdarg>
 #include <exception>
-#include <sstream>
+
 #include <iostream>
 
 void Dodger::init()
@@ -14,7 +15,7 @@ void Dodger::init()
     int width = (Level::num_cols + 4) * 24;
     int height = (Level::num_lines + 5) * 24;
     window.create(sf::VideoMode(width, height), "dodger-remake");
-    window.setFramerateLimit(7);
+    window.setFramerateLimit(9);
     window.setVerticalSyncEnabled(true);
 
     sf::Image icon;
@@ -58,7 +59,7 @@ void Dodger::init()
     sounds.gover.loadFromFile("snd/gover.wav");
     sounds.wdone.loadFromFile("snd/wdone.wav");
 
-    std::ifstream stream("dodger-1.0/dodger.dat");
+    std::ifstream stream("dodger-1.1/dodger.dat");
 
     Level level;
     //try {
@@ -69,15 +70,16 @@ void Dodger::init()
     //} catch(...) {
     //}
 
+    stream.close();
+
+    running = true;
     high_score = 500; // TODO;
     score_panel.set_high_score(high_score);
-
-    stream.close();
+    next_screen = false;
 }
 
 void Dodger::new_life()
 {
-    death = false;
     player_direction = up;
 
     player_line = level.initial_player_line;
@@ -97,22 +99,23 @@ void Dodger::new_life()
 
 }
 
+void Dodger::load_screen(int data[Level::num_lines][Level::num_cols])
+{
+    for (int line = 0; line != Level::num_lines; line++) {
+        for (int col = 0; col != Level::num_cols; col++) {
+            int cell = data[line][col];
+            sprites[line][col].setTexture(textures.cell[cell]);
+        }
+    }
+}
+
 void Dodger::new_level()
 {
     level = levels[level_number - 1];
 
     score_panel.set_level(level_number);
 
-    for (int line = 0; line != Level::num_lines; line++) {
-        for (int col = 0; col != Level::num_cols; col++) {
-            int cell = level.data[line][col];
-            if (cell != Level::player) {
-                sprites[line][col].setTexture(textures.cell[cell]);
-            } else {
-                sprites[line][col].setTexture(textures.cell[Level::grid]);
-            }
-        }
-    }
+    load_screen(level.data);
 
     enemies.clear();
     for (int i = 0; i < Level::num_enemies; i++) {
@@ -141,7 +144,7 @@ void Dodger::run()
 {
     init();
 
-    new_game();
+    game_state = welcome;
 
     loop();
 
@@ -151,96 +154,89 @@ void Dodger::run()
 
 void Dodger::loop()
 {
-    while (window.isOpen()) {
-        sf::Event event;
-        while (window.pollEvent(event)) {
-            if (event.type == sf::Event::Closed) {
-                return;
-            }
-            if (event.type == sf::Event::KeyPressed) {
-                switch (event.key.code) {
-                case sf::Keyboard::Up:
-                    player_direction = up;
-                    delta_line = -1;
-                    delta_col = 0;
-                    break;
-                case sf::Keyboard::Down:
-                    player_direction = down;
-                    delta_line = 1;
-                    delta_col = 0;
-                    break;
-                case sf::Keyboard::Left:
-                    player_direction = left;
-                    delta_line = 0;
-                    delta_col = -1;
-                    break;
-                case sf::Keyboard::Right:
-                    player_direction = right;
-                    delta_line = 0;
-                    delta_col = 1;
-                    break;
-                default:
-                    break;
-                }
-            }
-        }
-
+    while (window.isOpen() && running) {
+        process_events();
         update();
-
         draw();
     }
 }
 
-void Dodger::update()
+void Dodger::process_events()
 {
-    if (level.food_count == 0) {
-        std::cout << "level cleared" << std::endl;
-        if (level_number == levels.size()) {
-            // TODO: well done screen
-            play_sound(sounds.wdone);
-            std::cout << "well done" << std::endl;
-            new_game();
-        } else {
-            // TODO: freeze image, pop-up with password to next level.
-            level_number++;
-            new_level();
+    next_screen = false;
+    sf::Event event;
+    while (window.pollEvent(event)) {
+        if (event.type == sf::Event::Closed) {
+            running = false;
         }
-        return;
-    }
-
-    if (death) {
-        death_anim++;
-        if (death_anim == death_anim_length) {
-            if (life_count > 0) {
-                sprites[player_line][player_col].setTexture(
-                        textures.cell[level.data[player_line][player_col]]);
-                new_life();
-            } else {
-                // TODO: game over screen
-                play_sound(sounds.gover);
-                std::cout << "game over" << std::endl;
-                new_game();
+        if (event.type == sf::Event::KeyPressed) {
+            switch (event.key.code) {
+            case sf::Keyboard::Up:
+                player_direction = up;
+                delta_line = -1;
+                delta_col = 0;
+                break;
+            case sf::Keyboard::Down:
+                player_direction = down;
+                delta_line = 1;
+                delta_col = 0;
+                break;
+            case sf::Keyboard::Left:
+                player_direction = left;
+                delta_line = 0;
+                delta_col = -1;
+                break;
+            case sf::Keyboard::Right:
+                player_direction = right;
+                delta_line = 0;
+                delta_col = 1;
+                break;
+            case sf::Keyboard::Return:
+                next_screen = true;
+                break;
+            default:
+                break;
             }
-            return;
         }
-        sprites[player_line][player_col].setTexture(textures.death[death_anim]);
-        return;
     }
+}
 
+bool Dodger::hit_by_laser()
+{
+    std::vector<Enemy>::iterator enemy;
+    for (enemy = enemies.begin(); enemy != enemies.end(); enemy++) {
+        if (enemy->is_laser_here(player_line, player_col)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void Dodger::update_enemies()
+{
+    std::vector<Enemy>::iterator enemy;
+    for (enemy = enemies.begin(); enemy != enemies.end(); enemy++) {
+        enemy->update(player_line, player_col);
+    }
+}
+
+void Dodger::update_dodger_position()
+{
     int new_player_line = player_line + delta_line;
     int new_player_col = player_col + delta_col;
-
     int new_cell = level.data[new_player_line][new_player_col];
 
-    // don't move if blocked
-    if (new_player_line < 0
-            || new_player_line >= Level::num_lines
-            || new_player_col < 0
-            || new_player_col >= Level::num_cols
-            || new_cell == Level::blank
-            || new_cell == Level::wall) {
-        new_cell = level.data[player_line][player_col];
-    } else if (delta_line != 0 or delta_col != 0) {
+    bool moving = (delta_line != 0 || delta_col != 0);
+
+    bool inside_level_grid = (new_player_line >= 0
+            && new_player_line < Level::num_lines
+            && new_player_col >= 0
+            && new_player_col < Level::num_cols);
+
+    bool blocked = (new_cell == Level::blank || new_cell == Level::wall);
+
+    // only update the position if the user requested a move and the new cell is valid
+    if (moving && inside_level_grid && ! blocked) {
         // draw a grid on the previous position and update the position
         sprites[player_line][player_col].setTexture(textures.cell[Level::grid]);
         player_line = new_player_line;
@@ -248,35 +244,19 @@ void Dodger::update()
         player_anim = (player_anim + 1) % 4;
     }
 
-    // check if dead and update laser shots
-    // need to check if dodger is hit before AND after updating the laser shots
-    // to prevent the dodger and the shot to pass each other with no hit.
-    bool hit = false;
-    std::vector<Enemy>::iterator enemy;
-    for (enemy = enemies.begin(); enemy != enemies.end(); enemy++) {
-        if (enemy->is_laser_here(player_line, player_col)) {
-            hit = true;
-        }
-        enemy->update(player_line, player_col);
-        if (enemy->is_laser_here(player_line, player_col)) {
-            hit = true;
-        }
-    }
-    if (hit || new_cell == Level::skull) {
-        play_sound(sounds.dead);
-        life_count--;
-        score_panel.set_num_lives(life_count);
-        death = true;
-        death_anim = 0;
-        sprites[player_line][player_col].setTexture(textures.death[death_anim]);
-        return; // can't eat if dead
-    }
+    AnimState anim_state = (AnimState) (player_anim / 2);
+    sprites[player_line][player_col].setTexture(
+            textures.player[player_direction][anim_state]);
 
+}
+
+void Dodger::check_if_eating(int new_cell)
+{
     if (new_cell == Level::apple
             || new_cell == Level::sberry
             || new_cell == Level::cherry) {
         level.food_count--;
-        level.data[new_player_line][new_player_col] = Level::grid;
+        level.data[player_line][player_col] = Level::grid;
 
         play_sound(sounds.chomp);
 
@@ -298,10 +278,143 @@ void Dodger::update()
             score_panel.set_high_score(high_score);
         }
     }
+}
 
-    AnimState anim_state = (AnimState) (player_anim / 2);
-    sprites[player_line][player_col].setTexture(
-            textures.player[player_direction][anim_state]);
+void Dodger::welcome_screen()
+{
+    static bool first_call = true;
+    if (first_call) {
+        first_call = false;
+        load_screen(screens::welcome_screen);
+    }
+    if (next_screen) {
+        first_call = true;
+        new_game();
+        game_state = playing;
+    }
+}
+
+void Dodger::play()
+{
+    update_dodger_position();
+
+    int new_cell = level.data[player_line][player_col];
+
+    // check if dead and update laser shots
+    // need to check if dodger is hit before AND after updating the laser shots
+    // to prevent the dodger and the shot to pass each other with no hit.
+    bool hit = hit_by_laser();
+    update_enemies();
+    hit |= hit_by_laser();
+
+    if (hit || new_cell == Level::skull) {
+        // Note: can't eat if dead
+        game_state = dying;
+
+    } else {
+
+        check_if_eating(new_cell);
+
+        if (level.food_count == 0) {
+            std::cout << "level cleared" << std::endl;
+            if (level_number == levels.size()) {
+                game_state = well_done;
+            } else {
+                game_state = password;
+            }
+        }
+    }
+}
+
+void Dodger::password_screen()
+{
+    // TODO: freeze image, pop-up with password to next level.
+    if (next_screen) {
+        level_number++;
+        new_level();
+        game_state = playing;
+    }
+}
+
+void Dodger::dead()
+{
+    static int death_anim = 0;
+
+    if (death_anim == 0) {
+        play_sound(sounds.dead);
+        life_count--;
+        score_panel.set_num_lives(life_count);
+    }
+
+    if (death_anim == death_anim_length) {
+        death_anim = 0;
+        if (life_count > 0) {
+            // update the texture where the dodger died with whatever is on the grid
+            sprites[player_line][player_col].setTexture(
+                    textures.cell[level.data[player_line][player_col]]);
+            new_life();
+            game_state = playing;
+        } else {
+            game_state = game_over;
+        }
+    } else {
+        sprites[player_line][player_col].setTexture(textures.death[death_anim]);
+        death_anim++;
+    }
+}
+
+void Dodger::game_over_screen()
+{
+    static bool first_call = true;
+    if (first_call) {
+        first_call = false;
+        load_screen(screens::game_over_screen);
+        play_sound(sounds.gover);
+        std::cout << "game over" << std::endl;
+    }
+    if (next_screen) {
+        game_state = welcome;
+        first_call = true;
+    }
+}
+
+void Dodger::well_done_screen()
+{
+    static bool first_call = true;
+    if (first_call) {
+        first_call = false;
+        load_screen(screens::well_done_screen);
+        play_sound(sounds.wdone);
+        std::cout << "well done" << std::endl;
+    }
+    if (next_screen) {
+        game_state = welcome;
+        first_call = true;
+    }
+}
+
+void Dodger::update()
+{
+    switch (game_state) {
+    case welcome:
+        welcome_screen();
+        break;
+    case playing:
+        play();
+        break;
+    case password:
+        password_screen();
+        break;
+    case dying:
+        dead();
+        break;
+    case game_over:
+        game_over_screen();
+        break;
+    case well_done:
+        well_done_screen();
+        break;
+    }
 }
 
 void Dodger::draw()
@@ -316,7 +429,7 @@ void Dodger::draw()
         }
     }
 
-    if (! death) {
+    if (game_state == playing || game_state == password) {
         std::vector<Enemy>::iterator enemy;
         for (enemy = enemies.begin(); enemy != enemies.end(); enemy++) {
             enemy->draw(window, (level.data));

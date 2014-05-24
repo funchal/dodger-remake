@@ -105,10 +105,10 @@ bool Level::import(std::istream& stream)
         error("Invalid level format: unrecognized enemies bitmask");
     }
 
-    enemies[n] = bitmask & (1 << n);
-    enemies[e] = bitmask & (1 << e);
     enemies[s] = bitmask & (1 << s);
     enemies[w] = bitmask & (1 << w);
+    enemies[n] = bitmask & (1 << n);
+    enemies[e] = bitmask & (1 << e);
 
     speed = stream.get();
     if (speed < 0 || speed > 4) {
