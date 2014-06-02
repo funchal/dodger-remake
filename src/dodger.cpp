@@ -7,7 +7,8 @@
 #include <fstream>
 #include <cstdarg>
 #include <exception>
-
+#include <sstream>
+#include <string>
 #include <iostream>
 
 void Dodger::init()
@@ -20,6 +21,18 @@ void Dodger::init()
 
     sf::Image icon;
     icon.loadFromFile("ico/dodger.bmp");
+
+    // http://www.1001fonts.com/tempofont-font.html
+    if (!font.loadFromFile("font/TempoFont.ttf"))
+    {
+        fatal("Loading font failed");
+    }
+    main_text.setFont(font);
+    main_text.setCharacterSize(18); // in pixels, not points!
+    main_text.setColor(sf::Color::Black);
+    password_text.setFont(font);
+    password_text.setCharacterSize(18);
+    password_text.setColor(sf::Color::Black);
 
     sf::Vector2u icon_size = icon.getSize();
     window.setIcon(icon_size.x, icon_size.y, icon.getPixelsPtr());
@@ -58,6 +71,24 @@ void Dodger::init()
     sounds.dead.loadFromFile("snd/dead.wav");
     sounds.gover.loadFromFile("snd/gover.wav");
     sounds.wdone.loadFromFile("snd/wdone.wav");
+
+    pwd_rect = sf::RectangleShape(sf::Vector2f(200, 60));
+    pwd_rect.setPosition(248, 270);
+    pwd_rect.setFillColor(sf::Color(196,195,208));
+    pwd_rect.setOutlineThickness(5);
+    pwd_rect.setOutlineColor(sf::Color(168,166,186));
+
+    // password to level 2 and following
+    passwords.push_back("LEVEL");
+    passwords.push_back("THREE");
+    passwords.push_back("APPLE");
+    passwords.push_back("FAILS");
+    passwords.push_back("ERROR");
+    passwords.push_back("SEVEN");
+    passwords.push_back("QUEUE");
+    passwords.push_back("TIMER");
+    passwords.push_back("STORE");
+    passwords.push_back("UTILS");
 
     std::ifstream stream("dodger-1.1/dodger.dat");
 
@@ -164,6 +195,7 @@ void Dodger::loop()
 void Dodger::process_events()
 {
     next_screen = false;
+    skip_level = false;
     sf::Event event;
     while (window.pollEvent(event)) {
         if (event.type == sf::Event::Closed) {
@@ -193,6 +225,9 @@ void Dodger::process_events()
                 break;
             case sf::Keyboard::Return:
                 next_screen = true;
+                break;
+            case sf::Keyboard::N:
+                skip_level = true; // to make testing easier
                 break;
             default:
                 break;
@@ -296,6 +331,11 @@ void Dodger::welcome_screen()
 
 void Dodger::play()
 {
+    if (skip_level) {
+        // cheat to ease testing
+        game_state = password;
+    }
+
     update_dodger_position();
 
     int new_cell = level.data[player_line][player_col];
@@ -328,11 +368,36 @@ void Dodger::play()
 
 void Dodger::password_screen()
 {
-    // TODO: freeze image, pop-up with password to next level.
+    static bool first_call = true;
+    if (first_call) {
+        first_call = false;
+
+        std::ostringstream main_msg;
+        main_msg << "Password for level " << level_number + 1 << " is:";
+        main_text.setString(main_msg.str());
+
+        std::ostringstream pwd_msg;
+        pwd_msg << passwords[level_number - 1];
+        password_text.setString(pwd_msg.str());
+
+        //center text
+        sf::Vector2u dim = window.getSize();
+        sf::FloatRect textRect = main_text.getLocalBounds();
+        main_text.setOrigin(textRect.left + textRect.width/2.0f,
+                       textRect.top  + textRect.height/2.0f);
+        main_text.setPosition(sf::Vector2f(dim.x / 2.0, dim.y / 2.0 - 10));
+
+        textRect = password_text.getLocalBounds();
+        password_text.setOrigin(textRect.left + textRect.width/2.0f,
+                textRect.top  + textRect.height/2.0f);
+        password_text.setPosition(sf::Vector2f(dim.x / 2.0, dim.y / 2.0 + 10));
+    }
     if (next_screen) {
+        password_text.setString("");
         level_number++;
         new_level();
         game_state = playing;
+        first_call = true;
     }
 }
 
@@ -434,6 +499,12 @@ void Dodger::draw()
         for (enemy = enemies.begin(); enemy != enemies.end(); enemy++) {
             enemy->draw(window, (level.data));
         }
+    }
+
+    if (password_text.getString() != "") {
+        window.draw(pwd_rect);
+        window.draw(main_text);
+        window.draw(password_text);
     }
 
     window.display();

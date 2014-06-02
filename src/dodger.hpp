@@ -78,6 +78,7 @@ private:
     std::vector<Level> levels;
     Level level;
     ScorePanel score_panel;
+    std::vector<std::string> passwords;
 
     int player_line;
     int player_col;
@@ -90,6 +91,11 @@ private:
     bool next_screen;
     std::vector<Enemy> enemies;
     bool running;
+    sf::RectangleShape pwd_rect;
+    sf::Font font;
+    sf::Text main_text;
+    sf::Text password_text;
+    bool skip_level;
 };
 
 void set_position(sf::Sprite& sprite, float line, float col);
