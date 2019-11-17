@@ -16,8 +16,6 @@ objdir := obj
 resdirs := $(imgdir) $(icodir) $(snddir) $(objdir)
 toupper = $(shell echo $(1) | tr '[:lower:]' '[:upper:]')
 
-SFML := ../SFML
-
 cxx := g++
 cppflags := \
 	-Wall \
@@ -25,8 +23,7 @@ cppflags := \
 	-Wshadow \
 	-Wmissing-declarations \
 	-MMD \
-	-MP \
-	-I $(SFML)/include
+	-MP
 
 cxxflags := \
 	-g \
@@ -36,9 +33,6 @@ cxxflags := \
 ld := g++
 ldflags := \
 	-rdynamic \
-	--enable-new-dtags \
-	-Wl,-rpath $(SFML)/lib \
-	-L $(SFML)/lib \
 	-lsfml-window \
 	-lsfml-graphics \
 	-lsfml-system \
